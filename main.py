@@ -637,8 +637,13 @@ class Profile:
         self.passedGameCount = 0
         self.gamesList = []
         self.hasMoreGames = False
+        self.passedFriendCount = 0
+        self.friendsList = []
+        self.hasMoreFriends = False
         self.master = master
+        self.listForfBtns = [False, False, False]
         self.account = account
+        self.flag = False
         shopFrame.place_forget()
         regFrame.place_forget()
         logFrame.place_forget()
@@ -702,25 +707,73 @@ class Profile:
         elif len(self.account["games"]) == 0:
             self.mainCanvas.create_text(60, 390, text="У вас нет игр.", font="Arial 20", fill=TEXT_COLOR, anchor=NW)
 
+        self.addGames()
 
         self.mainCanvas.create_text(720, 250, text="ДРУЗЬЯ", font="Arial 27", fill="#ffffff", anchor=NW)
         self.mainCanvas.create_rectangle(710, 308, 960, 689, fill="#001021", outline="#ff0000")
         if len(self.account["friends"]) > 3:
             Button(self.master, width=3, height=1, border=0, background="#001021", fg="#ffffff", text="<--").place(relx=0.15, rely=0.65)
-            Button(self.master, width=3, height=1, border=0, background="#001021", fg="#ffffff", text="-->", command=self.addGames).place(relx=0.65, rely=0.65)
+            Button(self.master, width=3, height=1, border=0, background="#001021", fg="#ffffff", text="-->", command=self.addFriends).place(relx=0.65, rely=0.65)
         elif len(self.account["friends"]) == 0:
             self.mainCanvas.create_text(725, 470, text="У вас нет друзей.", font="Arial 20", fill=TEXT_COLOR, anchor=NW)
 
-        self.addGames()
+        # self.addFriends()
 
 
     def addFriends(self):
         with open("Files/usersData.json", "r") as FileHandler:
             usersData = json.loads(FileHandler.readline())
 
+        for i in self.account["friends"]:
+            self.friendsList.append(usersData[i])
 
+        hasEndedFriends = False
+        posY = 0.43
+
+        self.friendsInfo = []
+        self.friendsCanvas = []
+        listForBtns = [False, False, False]
+
+        for i in range(3):
+            if i + 1 > len(self.friendsList) - self.passedFriendCount:
+                self.passedFriendCount = len(self.friendsList)
+                hasEndedFriends = True
+                break
+
+            curFriend = self.friendsList[i + self.passedFriendCount]
+
+            friendCanvas = Canvas(self.master, background="#7c98b3", width=247, height=120, highlightthickness=1, highlightcolor="#bccce0")
+
+            avaImg = ImageTk.PhotoImage(Image.open("images/guest.png").resize((120, 120)))
+            if curFriend["avatar"]:
+                avaImg = ImageTk.PhotoImage(Image.open(curFriend["avatar"]).resize((120, 120)))
+            friendCanvas.create_image(0, 0, image=avaImg, anchor=NW)
+            friendCanvas.image = avaImg
+
+            friendCanvas.create_text(130, 10, text=curFriend["gameName"], font="Arial 13", fill="#ffffff", anchor=NW)
+
+            listForBtns[i] = True
+
+            self.friendsInfo.append(curFriend)
+            self.friendsCanvas.append(friendCanvas)
+
+            friendCanvas.place(relx=0.694, rely=posY)
+            posY += 0.18
+
+        if listForBtns[0]:
+            Button(self.master, width=12, height=2, background='#ff0000', fg="#ffffff", text="Удалить", border=0, command=lambda: self.deleteFriend(self.friendsInfo[0])).place(relx=0.8, rely=0.52)
+        if listForBtns[1]:
+            Button(self.master, width=12, height=2, background='#ff0000', fg="#ffffff", text="Удалить", border=0, command=lambda: self.deleteFriend(self.friendsInfo[1])).place(relx=0.8, rely=0.52 + 0.18)
+        if listForBtns[2]:
+            Button(self.master, width=12, height=2, background='#ff0000', fg="#ffffff", text="Удалить", border=0, command=lambda: self.deleteFriend(self.friendsInfo[2])).place(relx=0.8, rely=0.52 + 0.36)
+
+        if not(hasEndedFriends):
+            self.passedFriendCount += 3
     def editProf(self):
         turnOnEditingProf(self.account)
+
+    def deleteFriend(self, friend):
+        ...
 
     def addGames(self):
         with open("Files/gamesData.json", "r") as FileHandler:
@@ -734,7 +787,7 @@ class Profile:
 
         self.gamesInfo = []
         self.gamesCanvas = []
-        listForBtns = [False, False, False]
+        self.listForfBtns = [False, False, False]
 
         for i in range(3):
             if i + 1 > len(self.gamesList) - self.passedGameCount:
@@ -756,16 +809,16 @@ class Profile:
 
             self.gamesInfo.append(curGame)
             self.gamesCanvas.append(gameCanvas)
-            listForBtns[i] = True
+            self.listForfBtns[i] = True
 
             posY += 0.18
         print(len(self.gamesList) - self.passedGameCount)
-        if listForBtns[0]:
-            print("TAsd")
+
+        if self.listForfBtns[0]:
             Button(self.master, width=12, height=2, background='#ff0000', fg="#ffffff", text="Удалить", border=0, command=lambda: self.deleteGame(self.gamesInfo[0])).place(relx=0.555, rely=0.48)
-        if listForBtns[1]:
+        if self.listForfBtns[1]:
             Button(self.master, width=12, height=2, background='#ff0000', fg="#ffffff", text="Удалить", border=0, command=lambda: self.deleteGame(self.gamesInfo[1])).place(relx=0.555, rely=0.48 + 0.18)
-        if listForBtns[2]:
+        if self.listForfBtns[2]:
             Button(self.master, width=12, height=2, background='#ff0000', fg="#ffffff", text="Удалить", border=0, command=lambda: self.deleteGame(self.gamesInfo[2])).place(relx=0.555, rely=0.48 + 0.36)
 
 
@@ -773,6 +826,7 @@ class Profile:
             self.passedGameCount += 3
 
     def deleteGame(self, game):
+        print(game)
         answer = askyesno("Предупреждение", "Вы действительно хотите удалить эту игру?")
         if answer:
             print(game["name"])
@@ -788,10 +842,17 @@ class Profile:
             with open("Files/usersData.json", "w") as FileHandler:
                 for key, val in usersData.items():
                     if shopHeaderOfficeBtn["text"].lower() == self.account["gameName"]:
+                        print("HAHAHAHAHAH")
+                        self.listForfBtns = [False, False, False]
+                        print(self.account)
+                        print(usersData[key]["games"])
                         usersData[key]["games"].remove(game["name"])
                         self.account["games"].remove(game["name"])
                         json.dump(usersData, FileHandler)
                         turnOnProf(self.account)
+        else:
+            print('ADASDDSA')
+            turnOnProf(self.account)
 
 
 class EditingProfile:
@@ -1005,6 +1066,10 @@ class EditingProfile:
         print(human["gameName"])
         usersData[self.account["gameName"]]["requestsOnFriends"].remove(human["gameName"])
         usersData[self.account["gameName"]]["friends"].append(human["gameName"])
+        usersData[human["gameName"]]["friends"].append(self.account["gameName"])
+        if self.account["gameName"] in usersData[human["gameName"]]["requestsOnFriends"]:
+            usersData[human["gameName"]]["requestsOnFriends"].remove(self.account["gameName"])
+
         self.account = usersData[self.account["gameName"]]
 
         try:
@@ -1070,6 +1135,7 @@ def turnOnEditingProf(account):
 
 if __name__ == '__main__':
     shopRoot = Tk()
+    shopRoot.title("Steam")
     shopRoot.geometry("1284x798+160+20")
     shopRoot.resizable(False, False)
     shopRoot.config(background=BG_COLOR)
@@ -1091,15 +1157,15 @@ if __name__ == '__main__':
     shopHeaderLibraryBtn.place(relx=0.45, rely=0.036)
     shopHeaderOfficeBtn.place(relx=0.585, rely=0.036)
     activeBtnUnderline(shopHeaderShopBtn, shopHeaderOfficeBtn)
-    # shop = Shop(shopFrame)
+    shop = Shop(shopFrame)
 
-    with open("Files/usersData.json", "r") as FileHandler:
-        usersData = json.loads(FileHandler.readline())
-
-    acc = {}
-    for key, val in usersData.items():
-        if key == "baxaba123":
-            acc = val
-
-    turnOnProf(acc)
+    # with open("Files/usersData.json", "r") as FileHandler:
+    #     usersData = json.loads(FileHandler.readline())
+    #
+    # acc = {}
+    # for key, val in usersData.items():
+    #     if key == "baxaba123":
+    #         acc = val
+    #
+    # turnOnProf(acc)
     shopRoot.mainloop()
